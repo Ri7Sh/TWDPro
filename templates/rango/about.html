@@ -1,19 +1,10 @@
-<!DOCTYPE html>
-
-
-
-
-<html>
-<head>
-	<title>About</title>
-</head>
-<body>
+{% extends 'rango/base.html' %}
+{% block title_block %}
+About
+{% endblock %}
+{% block body_block %}
 <h1>Rango says....</h1>
-<div>this is About Page</div>
-<div>This tutorial has been completed by {{yourname}}</div>
-<div>
-<a href="/rango/">Main</a><br>
+this is About Page
+This tutorial has been completed by {{yourname}}
 <img src="{{ MEDIA_URL}}dor.jpg"  alt="Its doraemon">
-</div>
-</body>
-</html>
+{% endblock %}
