@@ -2,21 +2,32 @@
 from __future__ import unicode_literals
 
 from django.shortcuts import render
+from django.contrib.auth import authenticate, login, logout
+from django.http import HttpResponseRedirect, HttpResponse
+from django.core.urlresolvers import reverse
 
-from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 from rango.models import Category
 from rango.models import Page
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
+from datetime import datetime
 
 def index(request):
 	category_list = Category.objects.order_by('-likes')[:5]
 	pages_list = Page.objects.order_by('-views')[:5]
 	context_dict = {'categories': (category_list),'pages': (pages_list)}
+	
 	return render(request, 'rango/index.html',context = context_dict)
+	
+	visitor_cookie_handler(request, response)
+	return response
 	#!html = "<html><body> Rango says hey there partner! <br/> <a href='/rango/about/'>About</a>"
 	#return HttpResponse(html)
 
 def about(request):
+	if request.session.test_cookie_worked():
+		print("TEST COOKIE WORKED")
+		request.session.delete_test_cookie()
 	context_dict1 = {'yourname':"Rigvita"}
 	return render(request, 'rango/about.html',context = context_dict1)
 	#html = "Rango says this is the about page.<br/> <a href='/rango/'>Main</a>"
@@ -34,6 +45,7 @@ def show_category(request, category_name_slug):
 		context_dict['pages']=None
 	return render(request, 'rango/category.html',context_dict)
 
+@login_required
 def add_category(request):
 	form = CategoryForm()
 	if request.method == 'POST':
@@ -45,7 +57,7 @@ def add_category(request):
 		else:
 			print(form.errors)
 	return render(request,'rango/add_category.html', {'form':form})
-
+@login_required
 def add_page(request, category_name_slug):
 	try:
 		category = Category.objects.get(slug=category_name_slug)
@@ -90,3 +102,39 @@ def register(request):
 		profile_form = UserProfileForm()
 
 	return render(request,'rango/register.html',{'user_form': user_form,'profile_form':profile_form,'registered':registered})
+
+def user_login(request):
+	if request.method == 'POST':
+		username = request.POST.get('username')
+		password = request.POST.get('password')
+		user = authenticate(username=username, password=password)
+		if user:
+			if user.is_active:
+				login(request, user)
+				return HttpResponseRedirect(reverse('index'))
+			else:
+				return HttpResponse("Your Rango account is disable.")
+		else:
+			print("Invalid login details:{0}, {1}".format(username, password))
+			return HttpResponse("Invalid details.")
+	else:
+		return render(request, 'rango/login.html', {})
+
+
+@login_required
+def user_logout(request):
+	logout(request)
+	return HttpResponseRedirect(reverse('index'))
+
+def visitor_cookie_handler(request, response):
+	visits = int(request.COOKIES.get('visits','1'))
+	last_visit_cookie = request.COOKIES.get('last_visit', str(datetime.now()))
+	last_visit_time = datetime.strptime(last_visit_cookie[:-7],'%Y-%m-%d %H:%M:%S')
+
+	if (datetime.now() - last_visit_time).seconds>0:
+		visits = visits+1
+		response.set_cookie('last_visit', str(datetime.now()))
+	else:
+		visits = 1
+		response.set_cookie('last_visit', last_visit_cookie)
+	response.set_cookie('visits', visits)

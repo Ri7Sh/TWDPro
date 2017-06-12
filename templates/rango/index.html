@@ -2,7 +2,11 @@
 {% load staticfiles %}
 {% block body_block %}
 	<h1>Rango says ....</h1>
-	hey there partner!
+	{% if user.is_authenticated %}
+		howdy {{ user.username }}
+	{% else %}
+		hey there partner!
+	{% endif %}
 	<strong>{{ boldmessage }}</strong>
 	<h1>Most viewed categories</h1>
 	{% if categories %}
@@ -25,4 +29,5 @@
 	<strong>There are no pages..</strong>
 	{% endif %}
 	<img src="{% static "images/exo.jpg" %}" alt="EXO">
+	<p>visits : {{ visits }}</p>
 {% endblock %}
